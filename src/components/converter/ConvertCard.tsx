@@ -6,6 +6,7 @@ import { activeProvider, type ConvertResult } from "@/lib/converter";
 import { DEFAULT_QUALITY, QUALITY_OPTIONS, type Format } from "@/lib/youtube";
 import type { VideoInfo } from "@/lib/video.functions";
 import { VideoThumb } from "./VideoThumb";
+import { ClickApiEmbed } from "./ClickApiEmbed";
 
 type Status = "idle" | "converting" | "done";
 
@@ -98,6 +99,15 @@ export function ConvertCard({
         </div>
       </div>
 
+      {!video.demo ? (
+        <div className="mt-5">
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-subtle">
+            Elige calidad y descarga
+          </p>
+          <ClickApiEmbed videoId={video.id} format={format} />
+        </div>
+      ) : (
+        <>
       <div className="mt-5">
         <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-subtle">Calidad</p>
         <div className="flex flex-wrap gap-2">
@@ -157,6 +167,8 @@ export function ConvertCard({
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

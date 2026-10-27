@@ -99,6 +99,8 @@
     transparent 70%
   );
   --gradient-thumb: linear-gradient(135deg, oklch(0.26 0.02 124), oklch(0.2 0.01 260));
+  --embed-bg: oklch(0.19 0 0);
+  --embed-filter: grayscale(1) contrast(1.05);
   --chart-1: oklch(0.9 0.19 124);
   --chart-2: oklch(0.7 0.12 200);
   --chart-3: oklch(0.6 0.1 260);
@@ -120,6 +122,15 @@
 
 @utility bg-thumb {
   background-image: var(--gradient-thumb);
+}
+
+@utility bg-embed {
+  background-color: var(--embed-bg);
+}
+
+/* Mutes the third-party converter iframe's colors to match our palette. */
+@utility embed-muted {
+  filter: var(--embed-filter);
 }
 
 @layer base {
