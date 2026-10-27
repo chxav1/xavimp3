@@ -37,12 +37,55 @@ ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "*").split(",") 
 WORK = Path(os.environ.get("WORK_DIR", tempfile.gettempdir())) / "tono-jobs"
 WORK.mkdir(parents=True, exist_ok=True)
 
-# Optional: YouTube cookies (Netscape cookies.txt contents) to get past
+# Optional: YouTube cookies (Netscape cookies.txt) to get past
 # "Sign in to confirm you're not a bot" on datacenter IPs.
+# Sources, in order: Render Secret File "cookies.txt", YTDLP_COOKIES_FILE, YTDLP_COOKIES env text.
+SECRET_COOKIE_PATHS = ["/etc/secrets/cookies.txt", os.environ.get("YTDLP_COOKIES_FILE", "")]
+
+
+def normalize_cookies(raw: str) -> tuple[str, dict]:
+    """Rebuild a Netscape cookie file; pasting into web forms often turns tabs into spaces."""
+    out = ["# Netscape HTTP Cookie File"]
+    names: set[str] = set()
+    yt = 0
+    for line in raw.replace("\r", "").split("\n"):
+        line = line.strip()
+        if not line or (line.startswith("#") and not line.startswith("#HttpOnly_")):
+            continue
+        parts = line.split("\t") if line.count("\t") >= 6 else line.split(None, 6)
+        if len(parts) == 6:  # cookie with an empty value
+            parts.append("")
+        if len(parts) != 7:
+            continue
+        out.append("\t".join(p.strip() for p in parts))
+        if "youtube.com" in parts[0]:
+            yt += 1
+            names.add(parts[5].strip())
+    stats = {
+        "cookies": len(out) - 1,
+        "youtube_cookies": yt,
+        "logged_in": bool(names & {"SAPISID", "__Secure-3PSID", "LOGIN_INFO"}),
+    }
+    return "\n".join(out) + "\n", stats
+
+
 COOKIE_FILE: str | None = None
-if os.environ.get("YTDLP_COOKIES", "").strip():
-    COOKIE_FILE = str(WORK.parent / "tono-cookies.txt")
-    Path(COOKIE_FILE).write_text(os.environ["YTDLP_COOKIES"].strip() + "\n")
+COOKIE_SOURCE = "none"
+COOKIE_STATS: dict = {"cookies": 0, "youtube_cookies": 0, "logged_in": False}
+_raw = ""
+for _p in SECRET_COOKIE_PATHS:
+    if _p and Path(_p).is_file():
+        _raw, COOKIE_SOURCE = Path(_p).read_text(errors="ignore"), "secret_file"
+        break
+if not _raw and os.environ.get("YTDLP_COOKIES", "").strip():
+    _raw, COOKIE_SOURCE = os.environ["YTDLP_COOKIES"], "env"
+if _raw:
+    _text, COOKIE_STATS = normalize_cookies(_raw)
+    if COOKIE_STATS["cookies"]:
+        # Writable copy: yt-dlp writes refreshed cookies back to this file.
+        COOKIE_FILE = str(WORK.parent / "tono-cookies.txt")
+        Path(COOKIE_FILE).write_text(_text)
+print(f"[cookies] source={COOKIE_SOURCE} {COOKIE_STATS}", flush=True)
 
 app = FastAPI(title="tono converter")
 app.add_middleware(
@@ -189,7 +232,12 @@ threading.Thread(target=janitor, daemon=True).start()
 @app.get("/")
 @app.get("/health")
 def health() -> dict:
-    return {"ok": True, "yt_dlp": yt_dlp.version.__version__}
+    # Only counts, never cookie values.
+    return {
+        "ok": True,
+        "yt_dlp": yt_dlp.version.__version__,
+        "cookies": {"source": COOKIE_SOURCE, **COOKIE_STATS},
+    }
 
 
 @app.post("/jobs")
