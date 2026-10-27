@@ -119,7 +119,7 @@ export function ConvertCard({
         </div>
       </div>
 
-      {!video.demo ? (
+      {!provider ? (
         <div className="mt-5">
           <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-subtle">
             Elige calidad y descarga
@@ -160,7 +160,7 @@ export function ConvertCard({
           <div>
             <div className="mb-2 flex items-center justify-between font-mono text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="size-3.5 animate-spin" /> convirtiendo
+                <Loader2 className="size-3.5 animate-spin" /> {PHASE_LABEL[phase]}
               </span>
               <span>{progress}%</span>
             </div>
