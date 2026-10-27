@@ -2,13 +2,24 @@ import { useState } from "react";
 import { ArrowLeft, Check, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { activeProvider, type ConvertResult } from "@/lib/converter";
+import {
+  demoProvider,
+  selfHostedProvider,
+  type ConvertPhase,
+  type ConvertResult,
+} from "@/lib/converter";
 import { DEFAULT_QUALITY, QUALITY_OPTIONS, type Format } from "@/lib/youtube";
 import type { VideoInfo } from "@/lib/video.functions";
 import { VideoThumb } from "./VideoThumb";
 import { ClickApiEmbed } from "./ClickApiEmbed";
 
 type Status = "idle" | "converting" | "done";
+
+const PHASE_LABEL: Record<ConvertPhase, string> = {
+  waking: "conectando con el servidor",
+  downloading: "descargando",
+  converting: "convirtiendo",
+};
 
 export function ConvertCard({
   video,
@@ -21,7 +32,11 @@ export function ConvertCard({
   const [quality, setQuality] = useState(DEFAULT_QUALITY.mp3);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<ConvertPhase>("waking");
   const [result, setResult] = useState<ConvertResult | null>(null);
+
+  // Real videos use your own server when it's set up; otherwise ClickAPI's embed.
+  const provider = video.demo ? demoProvider : selfHostedProvider;
 
   const reset = () => {
     setStatus("idle");
@@ -36,15 +51,20 @@ export function ConvertCard({
   };
 
   const convert = async () => {
+    if (!provider) return;
     setStatus("converting");
     setProgress(0);
+    setPhase("waking");
     try {
-      const res = await activeProvider.convert({ video, format, quality }, setProgress);
+      const res = await provider.convert({ video, format, quality }, (pct, ph) => {
+        setProgress(pct);
+        setPhase(ph);
+      });
       setResult(res);
       setStatus("done");
     } catch (err) {
       console.error(err);
-      toast.error("La conversión ha fallado. Inténtalo de nuevo.");
+      toast.error(err instanceof Error ? err.message : "La conversión ha fallado. Inténtalo de nuevo.");
       reset();
     }
   };
@@ -99,7 +119,7 @@ export function ConvertCard({
         </div>
       </div>
 
-      {!video.demo ? (
+      {!provider ? (
         <div className="mt-5">
           <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-subtle">
             Elige calidad y descarga
@@ -140,7 +160,7 @@ export function ConvertCard({
           <div>
             <div className="mb-2 flex items-center justify-between font-mono text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="size-3.5 animate-spin" /> convirtiendo
+                <Loader2 className="size-3.5 animate-spin" /> {PHASE_LABEL[phase]}
               </span>
               <span>{progress}%</span>
             </div>
