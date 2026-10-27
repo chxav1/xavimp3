@@ -9,7 +9,13 @@ import { VideoThumb } from "./VideoThumb";
 
 type Status = "idle" | "converting" | "done";
 
-export function ConvertCard({ video, onBack }: { video: VideoInfo; onBack?: () => void }) {
+export function ConvertCard({
+  video,
+  onBack,
+}: {
+  video: VideoInfo;
+  onBack?: (() => void) | undefined;
+}) {
   const [format, setFormat] = useState<Format>("mp3");
   const [quality, setQuality] = useState(DEFAULT_QUALITY.mp3);
   const [status, setStatus] = useState<Status>("idle");

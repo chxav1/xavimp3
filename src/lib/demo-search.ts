@@ -17,7 +17,7 @@ export function demoSearch(query: string): VideoInfo[] {
   return SUFFIXES.map((s, i) => ({
     id: `demo${String(i).padStart(7, "0")}`,
     title: `${q} ${s}`,
-    author: CHANNELS[i % CHANNELS.length],
+    author: CHANNELS[i % CHANNELS.length] ?? "Canal",
     thumbnail: null,
     demo: true,
   }));
