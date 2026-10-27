@@ -118,6 +118,10 @@ def run_job(job_id: str, video_id: str, fmt: str, quality: str) -> None:
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
+        "retries": 10,
+        "fragment_retries": 10,
+        # Small chunks avoid YouTube's mid-download 403s on big streams.
+        "http_chunk_size": 10 * 1024 * 1024,
         "progress_hooks": [on_download],
         "postprocessor_hooks": [on_postprocess],
     }
