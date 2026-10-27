@@ -25,11 +25,17 @@ YouTube a veces bloquea los servidores en la nube. Se arregla con cookies de una
 
 1. Usa **una cuenta de Google secundaria**, no la tuya principal (puede acabar bloqueada).
 2. Instala la extensión **"Get cookies.txt LOCALLY"** en Chrome.
-3. Entra en youtube.com con esa cuenta → abre la extensión → **Export** (formato Netscape).
-4. En Render → tu servicio → **Environment** → añade `YTDLP_COOKIES` y pega **todo** el contenido del archivo.
-5. Guarda; Render reinicia solo.
+3. Abre una **ventana de incógnito**, permite la extensión en incógnito y entra en youtube.com con esa cuenta.
+4. Abre la extensión → **Export** (formato Netscape) y **cierra la ventana de incógnito** enseguida (si sigues navegando, YouTube invalida esas cookies).
+5. En Render → tu servicio → **Environment** → **Secret Files** → **Add Secret File**:
+   - Filename: `cookies.txt`
+   - Contents: pega **todo** el archivo.
+6. Guarda y pulsa **Manual Deploy → Deploy latest commit**.
+7. Abre `/health`: en `cookies` debe salir `"source":"secret_file"` y `"logged_in":true`.
 
-Las cookies caducan con el tiempo. Si vuelve el error, repite el paso 3 y 4.
+(También vale la variable `YTDLP_COOKIES`, pero al pegar en ese campo a veces se rompe el formato.)
+
+Las cookies caducan con el tiempo. Si vuelve el error, repite los pasos 3 a 6.
 
 ## Ajustes opcionales
 
