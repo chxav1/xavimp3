@@ -33,3 +33,13 @@ describe("buildFileName", () => {
     expect(buildFileName('A/B: "C"?', "mp3", "320")).toBe("AB C (320kbps).mp3");
   });
 });
+
+describe("clickApiUrl", () => {
+  it("builds the dark multi-button converter for the chosen format", async () => {
+    const { clickApiUrl } = await import("@/lib/clickapi");
+    expect(clickApiUrl("dQw4w9WgXcQ", "mp3")).toBe(
+      "https://clickapi.net/api/button/mp3?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ&theme=dark",
+    );
+    expect(clickApiUrl("dQw4w9WgXcQ", "mp4")).toContain("/api/button/mp4?");
+  });
+});
