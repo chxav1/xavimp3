@@ -53,8 +53,8 @@ def normalize_cookies(raw: str) -> tuple[str, dict]:
         if not line or (line.startswith("#") and not line.startswith("#HttpOnly_")):
             continue
         parts = line.split("\t") if line.count("\t") >= 6 else line.split(None, 6)
-        if len(parts) < 7:
-            parts += [""] * (7 - len(parts)) if len(parts) == 6 else []
+        if len(parts) == 6:  # cookie with an empty value
+            parts.append("")
         if len(parts) != 7:
             continue
         out.append("\t".join(p.strip() for p in parts))
