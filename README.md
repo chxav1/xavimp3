@@ -1,12 +1,6 @@
 # Xavimp3
 
-https://ytmp3.biz.pl/ crea una copia exacta de esta web, sobretodo su funcionamiento, la api que coge para descargar videos etc..
-
-necesito un yt to mp3 propio básicamente, ese funciona muy bien.
-
-pero el estilo y el uI en general cambialo por completo, quiero algo moderno, oscurito y minimalista y simple.
-
-This project was built with [Lovable](https://lovable.dev).
+sami hijo de puta deja de cotillear
 
 **Live app**: https://xavimp3.lovable.app
 
