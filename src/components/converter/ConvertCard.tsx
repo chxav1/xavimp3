@@ -12,6 +12,7 @@ import { DEFAULT_QUALITY, QUALITY_OPTIONS, type Format } from "@/lib/youtube";
 import type { VideoInfo } from "@/lib/video.functions";
 import { VideoThumb } from "./VideoThumb";
 import { ClickApiEmbed } from "./ClickApiEmbed";
+import { play } from "@/lib/sounds";
 
 type Status = "idle" | "converting" | "done";
 
@@ -62,8 +63,10 @@ export function ConvertCard({
       });
       setResult(res);
       setStatus("done");
+      play("done");
     } catch (err) {
       console.error(err);
+      play("error");
       toast.error(err instanceof Error ? err.message : "La conversión ha fallado. Inténtalo de nuevo.");
       reset();
     }
@@ -108,7 +111,10 @@ export function ConvertCard({
             {(["mp3", "mp4"] as Format[]).map((f) => (
               <button
                 key={f}
-                onClick={() => pickFormat(f)}
+                onClick={() => {
+                  if (f !== format) play("tick");
+                  pickFormat(f);
+                }}
                 data-active={format === f}
                 className="rounded-md px-4 py-1.5 font-mono text-xs uppercase text-muted-foreground transition-colors data-[active=true]:bg-surface data-[active=true]:text-foreground"
               >
@@ -121,9 +127,13 @@ export function ConvertCard({
 
       {!provider ? (
         <div className="mt-5">
-          <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-subtle">
-            Elige calidad y descarga
-          </p>
+          <ol className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-wider text-subtle">
+            {["Verifica", "Elige calidad", "Descarga"].map((s, i) => (
+              <li key={s} className="inline-flex items-center gap-1.5">
+                <span className="text-primary">0{i + 1}</span> {s}
+              </li>
+            ))}
+          </ol>
           <ClickApiEmbed videoId={video.id} format={format} />
         </div>
       ) : (
