@@ -15,3 +15,5 @@
 - Demo search results always use `demoProvider` (simulated progress, no file).
 - Video metadata is fetched server-side via YouTube oEmbed in `src/lib/video.functions.ts` (no API key, avoids browser CORS).
 - Name search uses `src/lib/demo-search.ts` placeholders until a real search provider is connected.
+- The ClickAPI iframe auto-sizes through the `iframe-resizer` v4 parent (ClickAPI ships the child script), loaded with a dynamic import because it touches `window`; never give it a fixed height that can clip or scroll.
+- UI sounds are synthesized with Web Audio in `src/lib/sounds.ts` (no audio files, mute saved in localStorage); ClickAPI's inner steps are only inferable from iframe focus/resize, never from its contents.
