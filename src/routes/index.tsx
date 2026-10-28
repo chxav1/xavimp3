@@ -6,6 +6,8 @@ import { SearchResults } from "@/components/converter/SearchResults";
 import { demoSearch } from "@/lib/demo-search";
 import { extractVideoId } from "@/lib/youtube";
 import { getVideoInfo, type VideoInfo } from "@/lib/video.functions";
+import { play } from "@/lib/sounds";
+import { SoundToggle } from "@/components/converter/SoundToggle";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -50,10 +52,16 @@ function Index() {
       setLoading(true);
       try {
         const res = await getVideoInfo({ data: { id } });
-        if (res.ok) setView({ kind: "video", video: res.video });
-        else setError(res.error);
+        if (res.ok) {
+          setView({ kind: "video", video: res.video });
+          play("found");
+        } else {
+          setError(res.error);
+          play("error");
+        }
       } catch {
         setError("Algo ha fallado. Inténtalo de nuevo.");
+        play("error");
       } finally {
         setLoading(false);
       }
@@ -62,9 +70,11 @@ function Index() {
 
     if (/^https?:\/\//i.test(q)) {
       setError("Ese enlace no parece de YouTube.");
+      play("error");
       return;
     }
     setView({ kind: "results", query: q, results: demoSearch(q) });
+    play("found");
   };
 
   const paste = async () => {
@@ -84,9 +94,12 @@ function Index() {
         <a href="/" className="font-mono text-sm font-medium tracking-tight">
           tono<span className="text-primary">.</span>
         </a>
-        <span className="rounded-full border border-border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-subtle">
-          mp3 · mp4
-        </span>
+        <div className="flex items-center gap-2">
+          <SoundToggle />
+          <span className="rounded-full border border-border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-subtle">
+            mp3 · mp4
+          </span>
+        </div>
       </header>
 
       <main className="relative mx-auto max-w-2xl px-5 pb-24 pt-14 sm:pt-24">
