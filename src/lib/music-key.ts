@@ -48,10 +48,10 @@ export function camelot(key: string, scale: Scale): string {
   return scale === "major" ? `${CAMELOT_MAJOR[pc]}B` : `${CAMELOT_MINOR[pc]}A`;
 }
 
-export function keyNames(key: string, scale: Scale) {
+export function keyNames(key: string, scale: Scale): { label: string; short: string } {
   const pc = pitchClass(key);
   return scale === "major"
-    ? { label: `${ES_MAJOR[pc]} mayor`, short: EN_MAJOR[pc] }
+    ? { label: `${ES_MAJOR[pc]} mayor`, short: `${EN_MAJOR[pc]}` }
     : { label: `${ES_MINOR[pc]} menor`, short: `${EN_MINOR[pc]}m` };
 }
 
