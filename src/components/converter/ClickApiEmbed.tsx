@@ -45,7 +45,6 @@ export function ClickApiEmbed({ videoId, format }: { videoId: string; format: Fo
           // Extra room on the right/bottom that our wrapper clips away, so any
           // scrollbar the inner page shows lands outside the visible box.
           bodyPadding: `0 ${GUTTER}px ${GUTTER}px 0`,
-          heightCalculationMethod: "max",
           onResized: ({ height }) => {
             // The box changes size when it moves to a new step (progress, download…).
             const now = Date.now();
@@ -82,7 +81,7 @@ export function ClickApiEmbed({ videoId, format }: { videoId: string; format: Fo
         title={`Descargar ${format.toUpperCase()}`}
         onLoad={() => setLoaded(true)}
         scrolling="no"
-        allowTransparency
+        {...{ allowtransparency: "true" }}
         style={{ width: `calc(100% + ${GUTTER}px)`, marginBottom: -GUTTER }}
         className="embed-muted block h-[260px] min-h-[200px] max-w-none overflow-hidden border-0 transition-[opacity,height] duration-300 data-[loaded=false]:opacity-0"
         data-loaded={loaded}
