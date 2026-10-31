@@ -1,13 +1,12 @@
 import type { TrackAnalysis } from "./music-key";
 
-export type AnalysisStep = "decoding" | "tempo" | "key";
+export type AnalysisStep = "searching" | "fetching" | "decoding" | "tempo" | "key";
 
 const SAMPLE_RATE = 44100;
 const MAX_SECONDS = 6 * 60;
 
 /** Decodes any browser-supported audio file to mono 44.1 kHz. Browser-only. */
-async function decodeMono(file: File): Promise<Float32Array> {
-  const data = await file.arrayBuffer();
+async function decodeMono(data: ArrayBuffer): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, SAMPLE_RATE, SAMPLE_RATE);
   const buffer = await ctx.decodeAudioData(data);
   const n = buffer.length;
@@ -25,15 +24,26 @@ async function decodeMono(file: File): Promise<Float32Array> {
   return mono;
 }
 
-/** Analyses tempo and key of an audio file locally (nothing is uploaded). */
+/** Downloads a CORS-open audio clip (e.g. a catalogue preview) and analyses it. */
+export async function analyzeUrl(
+  url: string,
+  onStep: (step: AnalysisStep) => void,
+): Promise<TrackAnalysis> {
+  onStep("fetching");
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("No se pudo obtener el audio de la canción.");
+  return analyzeAudio(await res.arrayBuffer(), onStep);
+}
+
+/** Analyses tempo and key of audio locally (nothing is uploaded). */
 export async function analyzeAudio(
-  file: File,
+  source: Blob | ArrayBuffer,
   onStep: (step: AnalysisStep) => void,
 ): Promise<TrackAnalysis> {
   onStep("decoding");
   let samples: Float32Array;
   try {
-    samples = await decodeMono(file);
+    samples = await decodeMono(source instanceof Blob ? await source.arrayBuffer() : source);
   } catch {
     throw new Error("No se pudo leer ese archivo. Prueba con un MP3, M4A o WAV.");
   }
