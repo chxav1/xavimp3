@@ -4,6 +4,9 @@ import { clickApiUrl } from "@/lib/clickapi";
 import { play } from "@/lib/sounds";
 import type { Format } from "@/lib/youtube";
 
+/** Hidden strip (px) past the visible box where inner scrollbars end up. */
+const GUTTER = 24;
+
 /**
  * ClickAPI's multi-button converter. It is a cross-origin iframe, so its
  * insides can't be styled — we use its dark theme, mute its colors with a CSS
@@ -39,6 +42,10 @@ export function ClickApiEmbed({ videoId, format }: { videoId: string; format: Fo
           checkOrigin: ["https://clickapi.net"],
           log: false,
           warningTimeout: 0,
+          // Extra room on the right/bottom that our wrapper clips away, so any
+          // scrollbar the inner page shows lands outside the visible box.
+          bodyPadding: `0 ${GUTTER}px ${GUTTER}px 0`,
+          heightCalculationMethod: "max",
           onResized: ({ height }) => {
             // The box changes size when it moves to a new step (progress, download…).
             const now = Date.now();
@@ -76,7 +83,8 @@ export function ClickApiEmbed({ videoId, format }: { videoId: string; format: Fo
         onLoad={() => setLoaded(true)}
         scrolling="no"
         allowTransparency
-        className="embed-muted block h-[240px] min-h-[200px] w-full overflow-hidden border-0 transition-[opacity,height] duration-300 data-[loaded=false]:opacity-0"
+        style={{ width: `calc(100% + ${GUTTER}px)`, marginBottom: -GUTTER }}
+        className="embed-muted block h-[260px] min-h-[200px] max-w-none overflow-hidden border-0 transition-[opacity,height] duration-300 data-[loaded=false]:opacity-0"
         data-loaded={loaded}
       />
     </div>
