@@ -1,46 +1,82 @@
-import { useRef, useState, type DragEvent } from "react";
-import { AudioLines, Loader2, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
+import { AudioLines, Loader2, Upload } from "lucide-react";
 import type { TrackAnalysis } from "@/lib/music-key";
 import type { AnalysisStep } from "@/lib/analyze-audio";
+import { findTrack, type MatchedTrack } from "@/lib/track.functions";
+import type { VideoInfo } from "@/lib/video.functions";
 import { play } from "@/lib/sounds";
 
 const STEP_LABEL: Record<AnalysisStep, string> = {
-  decoding: "leyendo audio",
+  searching: "buscando la canción",
+  fetching: "escuchando un fragmento",
+  decoding: "escuchando un fragmento",
   tempo: "detectando bpm",
   key: "detectando tonalidad",
 };
 
 type State =
-  | { kind: "idle"; error?: string }
-  | { kind: "busy"; step: AnalysisStep; name: string }
-  | { kind: "done"; result: TrackAnalysis; name: string };
+  | { kind: "busy"; step: AnalysisStep }
+  | { kind: "done"; result: TrackAnalysis; source: string }
+  | { kind: "manual"; reason: string; error?: string };
 
-/** Drop the downloaded file → BPM + key, analysed locally with Essentia. */
-export function TrackAnalyzer() {
-  const [state, setState] = useState<State>({ kind: "idle" });
+/**
+ * BPM + key straight from the video: finds the song in Deezer's catalogue and
+ * analyses its preview with Essentia in the browser. Dropping the downloaded
+ * file is only the fallback when the song isn't found.
+ */
+export function TrackAnalyzer({ video }: { video: VideoInfo }) {
+  const [state, setState] = useState<State>({ kind: "busy", step: "searching" });
   const [over, setOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const run = async (file: File | undefined) => {
+  useEffect(() => {
+    let cancelled = false;
+    const step = (s: AnalysisStep) => !cancelled && setState({ kind: "busy", step: s });
+    (async () => {
+      step("searching");
+      let track: MatchedTrack | null = null;
+      try {
+        track = (await findTrack({ data: { title: video.title, author: video.author } })).track;
+      } catch {
+        /* treated as not found */
+      }
+      if (cancelled) return;
+      if (!track) {
+        setState({ kind: "manual", reason: "No encontramos esta canción en el catálogo." });
+        return;
+      }
+      try {
+        const { analyzeUrl } = await import("@/lib/analyze-audio");
+        const result = await analyzeUrl(track.previewUrl, step);
+        if (cancelled) return;
+        setState({ kind: "done", result, source: `${track.title} — ${track.artist}` });
+        play("done");
+      } catch {
+        if (!cancelled) setState({ kind: "manual", reason: "No se pudo analizar la canción." });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [video.title, video.author]);
+
+  const runFile = async (file: File | undefined) => {
     if (!file || state.kind === "busy") return;
-    setState({ kind: "busy", step: "decoding", name: file.name });
+    const prev = state;
+    setState({ kind: "busy", step: "decoding" });
     try {
       const { analyzeAudio } = await import("@/lib/analyze-audio");
-      const result = await analyzeAudio(file, (step) =>
-        setState({ kind: "busy", step, name: file.name }),
-      );
-      setState({ kind: "done", result, name: file.name });
+      const result = await analyzeAudio(file, (s) => setState({ kind: "busy", step: s }));
+      setState({ kind: "done", result, source: file.name });
       play("done");
     } catch (err) {
       play("error");
-      setState({ kind: "idle", error: err instanceof Error ? err.message : "No se pudo analizar." });
+      setState({
+        kind: "manual",
+        reason: prev.kind === "manual" ? prev.reason : "",
+        error: err instanceof Error ? err.message : "No se pudo analizar.",
+      });
     }
-  };
-
-  const onDrop = (e: DragEvent) => {
-    e.preventDefault();
-    setOver(false);
-    void run(e.dataTransfer.files[0]);
   };
 
   const input = (
@@ -50,7 +86,7 @@ export function TrackAnalyzer() {
       accept="audio/*,video/mp4,.mp3,.m4a,.wav,.flac,.ogg,.aac"
       className="hidden"
       onChange={(e) => {
-        void run(e.target.files?.[0]);
+        void runFile(e.target.files?.[0]);
         e.target.value = "";
       }}
     />
@@ -81,13 +117,13 @@ export function TrackAnalyzer() {
           </div>
         </div>
         <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[11px] text-subtle">
-          <span className="truncate">{state.name}</span>
+          <span className="truncate">{state.source}</span>
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             className="inline-flex shrink-0 items-center gap-1.5 transition-colors hover:text-foreground"
           >
-            <RotateCcw className="size-3" /> analizar otro
+            <Upload className="size-3" /> ¿otra versión? sube el archivo
           </button>
         </div>
         {input}
@@ -95,12 +131,30 @@ export function TrackAnalyzer() {
     );
   }
 
-  const busy = state.kind === "busy";
+  if (state.kind === "busy") {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-border px-4 py-3.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface text-primary">
+          <Loader2 className="size-4 animate-spin" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm">BPM y tonalidad</span>
+          <span className="block font-mono text-[11px] text-subtle">{STEP_LABEL[state.step]}</span>
+        </span>
+      </div>
+    );
+  }
+
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setOver(false);
+    void runFile(e.dataTransfer.files[0]);
+  };
+
   return (
     <div>
       <button
         type="button"
-        disabled={busy}
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
@@ -109,23 +163,19 @@ export function TrackAnalyzer() {
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
         data-over={over}
-        className="flex w-full items-center gap-3 rounded-xl border border-dashed border-input px-4 py-3.5 text-left transition-colors hover:border-subtle data-[over=true]:border-primary data-[over=true]:bg-primary/5 disabled:cursor-default"
+        className="flex w-full items-center gap-3 rounded-xl border border-dashed border-input px-4 py-3.5 text-left transition-colors hover:border-subtle data-[over=true]:border-primary data-[over=true]:bg-primary/5"
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface text-primary">
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <AudioLines className="size-4" />}
+          <AudioLines className="size-4" />
         </span>
         <span className="min-w-0">
-          <span className="block text-sm">
-            {busy ? STEP_LABEL[state.step] : "BPM y tonalidad"}
-          </span>
-          <span className="block truncate font-mono text-[11px] text-subtle">
-            {busy ? state.name : "Suelta aquí el archivo descargado · se analiza en tu navegador"}
+          <span className="block text-sm">BPM y tonalidad</span>
+          <span className="block font-mono text-[11px] text-subtle">
+            {state.reason ? `${state.reason} ` : ""}Suelta aquí el archivo descargado
           </span>
         </span>
       </button>
-      {state.kind === "idle" && state.error && (
-        <p className="mt-2 text-xs text-destructive">{state.error}</p>
-      )}
+      {state.error && <p className="mt-2 text-xs text-destructive">{state.error}</p>}
       {input}
     </div>
   );

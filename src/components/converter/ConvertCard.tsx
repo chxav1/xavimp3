@@ -202,7 +202,7 @@ export function ConvertCard({
       )}
 
       <div className="mt-5 border-t border-border pt-5">
-        <TrackAnalyzer />
+        <TrackAnalyzer video={video} />
       </div>
     </div>
   );
