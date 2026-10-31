@@ -13,6 +13,8 @@ declare module "iframe-resizer/js/iframeResizer" {
     log?: boolean;
     scrolling?: boolean | "omit";
     warningTimeout?: number;
+    bodyPadding?: string;
+    heightCalculationMethod?: "bodyOffset" | "bodyScroll" | "documentElementOffset" | "documentElementScroll" | "max" | "min" | "grow" | "lowestElement" | "taggedElement";
     onResized?: (e: ResizedEvent) => void;
   }
   const iframeResize: (options: Options, target: HTMLIFrameElement) => IFrameComponent[];

@@ -12,6 +12,7 @@ import { DEFAULT_QUALITY, QUALITY_OPTIONS, type Format } from "@/lib/youtube";
 import type { VideoInfo } from "@/lib/video.functions";
 import { VideoThumb } from "./VideoThumb";
 import { ClickApiEmbed } from "./ClickApiEmbed";
+import { TrackAnalyzer } from "./TrackAnalyzer";
 import { play } from "@/lib/sounds";
 
 type Status = "idle" | "converting" | "done";
@@ -199,6 +200,10 @@ export function ConvertCard({
       </div>
         </>
       )}
+
+      <div className="mt-5 border-t border-border pt-5">
+        <TrackAnalyzer />
+      </div>
     </div>
   );
 }
